@@ -1,0 +1,18 @@
+{
+  "mode": "reconstruct_stl",
+  "images": [
+    {"mime_type": "image/png", "data_base64": "FRONT_BASE64"},
+    {"mime_type": "image/png", "data_base64": "BACK_BASE64"},
+    {"mime_type": "image/png", "data_base64": "LEFT_BASE64"},
+    {"mime_type": "image/png", "data_base64": "RIGHT_BASE64"},
+    {"mime_type": "image/png", "data_base64": "LEFT_FRONT_BASE64"},
+    {"mime_type": "image/png", "data_base64": "RIGHT_REAR_BASE64"}
+  ],
+  "requirement": "单件实心单色模型，保留左右不对称、披风和一体式挂孔；输出简化初版时明确标注。",
+  "dimensions_mm": {
+    "height": 40,
+    "preserve_reference_proportions": true
+  },
+  "include_editable_source": true
+}
+

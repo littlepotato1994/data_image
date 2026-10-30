@@ -1,0 +1,14 @@
+{
+  "mode": "render_3d_views",
+  "images": [
+    {
+      "mime_type": "image/png",
+      "data_base64": "REPLACE_WITH_RAW_BASE64"
+    }
+  ],
+  "requirement": "忠实还原角色，PVC公仔质感，保留挂孔，纯白背景。",
+  "views": ["front", "back", "left", "right", "left_front", "right_rear"],
+  "image_size": "1024x1024",
+  "image_quality": "high"
+}
+

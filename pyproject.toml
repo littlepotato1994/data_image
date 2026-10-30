@@ -1,0 +1,25 @@
+[project]
+name = "codex-3d-api"
+version = "0.1.0"
+description = "Base64 API for GPT Image six-view rendering and Codex-driven STL reconstruction"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "manifold3d>=3.2,<4",
+  "matplotlib>=3.10,<4",
+  "numpy>=2.2,<3",
+  "openai>=2.8,<3",
+  "pillow>=11,<14",
+  "pydantic>=2.9,<3",
+  "scikit-image>=0.25,<1",
+  "scipy>=1.15,<2",
+  "trimesh>=4.6,<6",
+  "uvicorn[standard]>=0.34,<1",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.3,<9", "httpx>=0.28,<1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
