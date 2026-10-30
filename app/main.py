@@ -11,7 +11,14 @@ from .base64io import write_inputs
 from .codex_service import run_codex_stl
 from .config import settings
 from .image_service import generate_views
-from .schemas import GenerateRequest, GenerateResponse, Mode, UsageSummary
+from .schemas import (
+    DEFAULT_CODEX_MODEL,
+    DEFAULT_IMAGE_MODEL,
+    GenerateRequest,
+    GenerateResponse,
+    Mode,
+    UsageSummary,
+)
 
 app = FastAPI(
     title="Codex 3D Artifact API",
@@ -29,7 +36,11 @@ app.add_middleware(
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "image_model": settings.image_model, "codex_model": settings.codex_model}
+    return {
+        "status": "ok",
+        "default_image_model": DEFAULT_IMAGE_MODEL,
+        "default_codex_model": DEFAULT_CODEX_MODEL,
+    }
 
 
 def _authorize(x_api_key: str | None) -> None:

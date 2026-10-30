@@ -3,7 +3,10 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
+
+DEFAULT_IMAGE_MODEL = "gpt-image-2"
+DEFAULT_CODEX_MODEL = "gpt-5.6-sol"
 
 
 class Mode(str, Enum):
@@ -40,6 +43,12 @@ class GenerateRequest(BaseModel):
     mode: Mode
     images: list[Base64Image] = Field(min_length=1, max_length=6)
     requirement: str = Field(min_length=1, max_length=30_000)
+    openai_api_key: SecretStr | None = Field(
+        None,
+        description="OpenAI API key used only for this request; omitted values use the local Codex login where supported",
+    )
+    image_model: str = Field(DEFAULT_IMAGE_MODEL, min_length=1, max_length=100)
+    codex_model: str = Field(DEFAULT_CODEX_MODEL, min_length=1, max_length=100)
     dimensions_mm: DimensionsMM | None = None
     views: list[Literal["front", "back", "left", "right", "left_front", "right_rear"]] | None = None
     image_size: Literal["1024x1024", "1536x1024", "1024x1536", "auto"] = "1024x1024"

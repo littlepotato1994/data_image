@@ -15,8 +15,6 @@ from app.schemas import GenerateRequest
 def _settings(tmp_path, codex_bin="codex"):
     return Settings(
         service_api_key=None,
-        image_model="fake-image",
-        codex_model="fake-codex",
         codex_bin=str(codex_bin),
         job_root=tmp_path,
         job_timeout_seconds=10,
@@ -40,6 +38,7 @@ class FakeImages:
 
     def edit(self, **kwargs):
         self.reference_counts.append(len(kwargs["image"]))
+        assert kwargs["model"] == "request-image-model"
         return SimpleNamespace(
             data=[SimpleNamespace(b64_json=base64.b64encode(b"png").decode())],
             usage={"input_tokens": 2, "output_tokens": 3, "total_tokens": 5},
@@ -53,6 +52,7 @@ def test_image_service_generates_requested_views(tmp_path):
         "mode": "render_3d_views",
         "images": [{"data_base64": "aW5wdXQ=", "mime_type": "image/png"}],
         "requirement": "same object",
+        "image_model": "request-image-model",
         "views": ["front", "back"],
     })
     images = FakeImages()

@@ -13,8 +13,6 @@ def _bool(name: str, default: bool) -> bool:
 @dataclass(frozen=True)
 class Settings:
     service_api_key: str | None = os.getenv("SERVICE_API_KEY")
-    image_model: str = os.getenv("IMAGE_MODEL", "gpt-image-2")
-    codex_model: str = os.getenv("CODEX_MODEL", "gpt-6.1-sol")
     codex_bin: str = os.getenv("CODEX_BIN", "codex")
     job_root: Path = Path(os.getenv("JOB_ROOT", "./var/jobs")).resolve()
     job_timeout_seconds: int = int(os.getenv("JOB_TIMEOUT_SECONDS", "1800"))

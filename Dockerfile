@@ -13,7 +13,7 @@ COPY examples ./examples
 COPY pyproject.toml README.md ./
 RUN pip install --no-cache-dir .
 
-# Supply OPENAI_API_KEY at runtime. The key is never baked into this image.
+# OpenAI credentials and model names are supplied per request, never baked into this image.
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 

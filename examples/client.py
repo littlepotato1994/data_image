@@ -16,6 +16,9 @@ def main() -> None:
     parser.add_argument("mode", choices=["render_3d_views", "reconstruct_stl"])
     parser.add_argument("images", nargs="+", type=Path)
     parser.add_argument("--requirement", required=True)
+    parser.add_argument("--openai-api-key", default=os.getenv("OPENAI_API_KEY"))
+    parser.add_argument("--image-model", default="gpt-image-2")
+    parser.add_argument("--codex-model", default="gpt-5.6-sol")
     parser.add_argument("--height", type=float)
     parser.add_argument("--url", default="http://127.0.0.1:8000/v1/generate")
     parser.add_argument("--output", type=Path, default=Path("client_output"))
@@ -30,7 +33,15 @@ def main() -> None:
             "mime_type": mime,
             "data_base64": base64.b64encode(path.read_bytes()).decode("ascii"),
         })
-    payload = {"mode": args.mode, "images": images, "requirement": args.requirement}
+    payload = {
+        "mode": args.mode,
+        "images": images,
+        "requirement": args.requirement,
+        "image_model": args.image_model,
+        "codex_model": args.codex_model,
+    }
+    if args.openai_api_key:
+        payload["openai_api_key"] = args.openai_api_key
     if args.mode == "reconstruct_stl":
         if not args.height:
             raise SystemExit("--height is required for reconstruct_stl")

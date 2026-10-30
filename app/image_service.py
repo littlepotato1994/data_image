@@ -41,7 +41,8 @@ def generate_views(
     settings: Settings,
     client: OpenAI | None = None,
 ) -> tuple[list[Artifact], TokenUsage, list[str]]:
-    client = client or OpenAI()
+    api_key = request.openai_api_key.get_secret_value() if request.openai_api_key else None
+    client = client or OpenAI(api_key=api_key)
     views = request.views or DEFAULT_VIEWS
     output_dir.mkdir(parents=True, exist_ok=True)
     artifacts: list[Artifact] = []
@@ -59,7 +60,7 @@ def generate_views(
                 refs.append(canonical)
             handles = [path.open("rb") for path in refs]
             response = client.images.edit(
-                model=settings.image_model,
+                model=request.image_model,
                 image=handles,
                 prompt=_prompt(request.requirement, view, index),
                 size=request.image_size,

@@ -1,5 +1,7 @@
 {
   "mode": "render_3d_views",
+  "openai_api_key": "sk-REPLACE_WITH_CALLER_KEY",
+  "image_model": "gpt-image-2",
   "images": [
     {
       "mime_type": "image/png",
