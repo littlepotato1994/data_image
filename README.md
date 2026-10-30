@@ -29,6 +29,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 打开 `http://localhost:8000/docs` 可查看并直接调用 OpenAPI/Swagger 接口。
 
+完整中文请求、响应和错误码说明见 [API.md](API.md)。
+
 Docker：
 
 ```bash

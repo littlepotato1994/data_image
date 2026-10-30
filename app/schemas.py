@@ -59,6 +59,8 @@ class GenerateRequest(BaseModel):
     def validate_mode(self):
         if self.mode == Mode.RECONSTRUCT_STL and self.dimensions_mm is None:
             raise ValueError("dimensions_mm is required for reconstruct_stl")
+        if self.mode == Mode.RENDER_3D_VIEWS and self.openai_api_key is None:
+            raise ValueError("openai_api_key is required for render_3d_views")
         return self
 
 
