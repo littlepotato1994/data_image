@@ -17,7 +17,6 @@ def main() -> None:
     parser.add_argument("mode", choices=["render_3d_views", "reconstruct_stl"])
     parser.add_argument("images", nargs="+", type=Path)
     parser.add_argument("--requirement", required=True)
-    parser.add_argument("--image-model", default="gpt-image-2")
     parser.add_argument("--codex-model", default="gpt-5.6-sol")
     parser.add_argument("--height", type=float)
     parser.add_argument("--url", default="http://127.0.0.1:8000/v1/generate")
@@ -37,7 +36,6 @@ def main() -> None:
         "mode": args.mode,
         "images": images,
         "requirement": args.requirement,
-        "image_model": args.image_model,
         "codex_model": args.codex_model,
     }
     if args.mode == "reconstruct_stl":

@@ -1,6 +1,6 @@
 {
   "mode": "render_3d_views",
-  "image_model": "gpt-image-2",
+  "codex_model": "gpt-5.6-sol",
   "images": [
     {
       "mime_type": "image/png",

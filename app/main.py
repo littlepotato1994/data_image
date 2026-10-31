@@ -13,7 +13,6 @@ from .config import settings
 from .image_service import generate_views
 from .schemas import (
     DEFAULT_CODEX_MODEL,
-    DEFAULT_IMAGE_MODEL,
     GenerateRequest,
     GenerateResponse,
     Mode,
@@ -38,7 +37,7 @@ app.add_middleware(
 def health() -> dict[str, str]:
     return {
         "status": "ok",
-        "default_image_model": DEFAULT_IMAGE_MODEL,
+        "image_backend": "codex_builtin_imagegen",
         "default_codex_model": DEFAULT_CODEX_MODEL,
     }
 
@@ -61,10 +60,7 @@ def generate(request: GenerateRequest, x_api_key: str | None = Header(None)) -> 
             artifacts, image_tokens, warnings = generate_views(
                 request, input_paths, job_dir / "output", settings
             )
-            usage = UsageSummary(
-                image_generation=image_tokens,
-                total_tokens=image_tokens.total_tokens,
-            )
+            usage = UsageSummary(codex=image_tokens, total_tokens=image_tokens.total_tokens)
             response = GenerateResponse(
                 request_id=request_id,
                 mode=request.mode,

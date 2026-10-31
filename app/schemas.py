@@ -5,7 +5,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-DEFAULT_IMAGE_MODEL = "gpt-image-2"
 DEFAULT_CODEX_MODEL = "gpt-5.6-sol"
 
 
@@ -43,7 +42,6 @@ class GenerateRequest(BaseModel):
     mode: Mode
     images: list[Base64Image] = Field(min_length=1, max_length=6)
     requirement: str = Field(min_length=1, max_length=30_000)
-    image_model: str = Field(DEFAULT_IMAGE_MODEL, min_length=1, max_length=100)
     codex_model: str = Field(DEFAULT_CODEX_MODEL, min_length=1, max_length=100)
     dimensions_mm: DimensionsMM | None = None
     views: list[Literal["front", "back", "left", "right", "left_front", "right_rear"]] | None = None

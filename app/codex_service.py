@@ -107,7 +107,6 @@ def run_codex_stl(
         "--json",
         "--ephemeral",
         "--skip-git-repo-check",
-        "--approve-for-me",
         "--sandbox", "workspace-write",
         "--cd", str(job_dir),
         "--model", request.codex_model,

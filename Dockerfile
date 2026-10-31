@@ -13,7 +13,7 @@ COPY examples ./examples
 COPY pyproject.toml README.md ./
 RUN pip install --no-cache-dir .
 
-# Supply OPENAI_API_KEY at runtime; credentials are never baked into this image.
+# Mount or configure trusted Codex/ChatGPT authentication at runtime.
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 

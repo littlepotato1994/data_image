@@ -1,10 +1,8 @@
-import base64
 import json
 import os
 import struct
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 
 from app.codex_service import run_codex_stl
 from app.config import Settings
@@ -32,36 +30,34 @@ def _binary_stl():
     )
 
 
-class FakeImages:
-    def __init__(self):
-        self.reference_counts = []
-
-    def edit(self, **kwargs):
-        self.reference_counts.append(len(kwargs["image"]))
-        assert kwargs["model"] == "request-image-model"
-        return SimpleNamespace(
-            data=[SimpleNamespace(b64_json=base64.b64encode(b"png").decode())],
-            usage={"input_tokens": 2, "output_tokens": 3, "total_tokens": 5},
-        )
-
-
 def test_image_service_generates_requested_views(tmp_path):
+    fake = tmp_path / "fake_codex_images.py"
+    fake.write_text(
+        f"#!{sys.executable}\n"
+        "import json, os, pathlib, sys\n"
+        "args=sys.argv[1:]\n"
+        "assert '--approve-for-me' not in args\n"
+        "assert 'OPENAI_API_KEY' not in os.environ\n"
+        "job=pathlib.Path(args[args.index('--cd')+1]); out=job/'output'; out.mkdir(exist_ok=True)\n"
+        "png=b'\\x89PNG\\r\\n\\x1a\\n' + b'test'\n"
+        "[(out/name).write_bytes(png) for name in ['01_front.png','02_back.png']]\n"
+        "answer=pathlib.Path(args[args.index('--output-last-message')+1])\n"
+        "answer.write_text(json.dumps({'summary':'ok','warnings':[]}))\n"
+        "print(json.dumps({'type':'turn.completed','usage':{'input_tokens':6,'output_tokens':4,'total_tokens':10}}))\n"
+    )
+    fake.chmod(0o755)
     input_path = tmp_path / "input.png"
     input_path.write_bytes(b"input")
     request = GenerateRequest.model_validate({
         "mode": "render_3d_views",
         "images": [{"data_base64": "aW5wdXQ=", "mime_type": "image/png"}],
         "requirement": "same object",
-        "image_model": "request-image-model",
         "views": ["front", "back"],
     })
-    images = FakeImages()
     artifacts, usage, warnings = generate_views(
-        request, [input_path], tmp_path / "out", _settings(tmp_path),
-        client=SimpleNamespace(images=images),
+        request, [input_path], tmp_path / "job" / "output", _settings(tmp_path, fake),
     )
     assert [item.filename for item in artifacts] == ["01_front.png", "02_back.png"]
-    assert images.reference_counts == [1, 2]
     assert usage.total_tokens == 10
     assert warnings == []
 

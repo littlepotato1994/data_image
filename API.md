@@ -34,9 +34,9 @@ http://127.0.0.1:8000/docs
 X-API-Key: 你的服务访问密钥
 ```
 
-`X-API-Key` 只用于访问本服务，与 OpenAI API Key 不同。
+`X-API-Key` 只用于访问本服务，与 ChatGPT/Codex 登录凭据不同。
 
-调用方不提交 OpenAI API Key。图片功能使用服务器环境变量 `OPENAI_API_KEY`，STL 功能使用服务器本机的 Codex/ChatGPT 登录状态。服务器凭据不会出现在接口请求或响应中。服务端和反向代理仍不应记录完整请求正文，避免泄露图片 Base64。
+调用方不提交 OpenAI API Key。图片和 STL 功能都使用服务器本机的 Codex/ChatGPT 登录状态；图片由 Codex 内置 ImageGen 工具生成。服务器凭据不会出现在接口请求或响应中。服务端和反向代理仍不应记录完整请求正文，避免泄露图片 Base64。
 
 ## 3. 通用图片格式
 
@@ -63,7 +63,7 @@ X-API-Key: 你的服务访问密钥
 ```json
 {
   "mode": "render_3d_views",
-  "image_model": "gpt-image-2",
+  "codex_model": "gpt-5.6-sol",
   "images": [
     {
       "mime_type": "image/png",
@@ -89,12 +89,12 @@ X-API-Key: 你的服务访问密钥
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 | --- | --- | --- | --- | --- |
 | `mode` | string | 是 | 无 | 固定为 `render_3d_views`。 |
-| `image_model` | string | 否 | `gpt-image-2` | 本次请求使用的图片生成模型。 |
+| `codex_model` | string | 否 | `gpt-5.6-sol` | 负责分析参考图并调用内置 ImageGen 的 Codex 模型。 |
 | `images` | array | 是 | 无 | 1～6 张外观或结构参考图。 |
 | `requirement` | string | 是 | 无 | 用户对材质、细节、背景等补充要求，长度 1～30000 个字符。 |
 | `views` | array | 否 | 六个标准视角 | 需要生成的视角；每个视角生成一张图片。 |
-| `image_size` | string | 否 | `1024x1024` | 可选 `1024x1024`、`1536x1024`、`1024x1536`、`auto`。 |
-| `image_quality` | string | 否 | `high` | 可选 `low`、`medium`、`high`、`auto`。 |
+| `image_size` | string | 否 | `1024x1024` | 期望画幅提示。内置工具可能返回不同的实际像素尺寸，不会强制拉伸。 |
+| `image_quality` | string | 否 | `high` | 期望质量提示，可选 `low`、`medium`、`high`、`auto`。 |
 
 ### 4.3 视角取值
 
@@ -253,7 +253,7 @@ curl -sS http://127.0.0.1:8000/v1/generate \
 | `classification` | string/null | STL 结果级别：`simplified_initial` 或 `detailed_reconstruction`；图片模式为 `null`。 |
 | `dimensions_mm` | object/null | 从最终 STL 重新读取后测得的实际尺寸；图片模式为 `null`。 |
 | `artifacts` | array | 生成文件及其 Base64 内容。 |
-| `usage` | object | 图片模型和 Codex 分别报告的 Token 用量。 |
+| `usage` | object | Codex JSONL 事件报告的 Token 用量。 |
 | `warnings` | array | 使用量不可用、模型简化或验证限制等警告。 |
 | `codex_thread_id` | string/null | Codex 运行事件提供的任务 ID。 |
 
@@ -269,8 +269,8 @@ curl -sS http://127.0.0.1:8000/v1/generate \
 
 ### 6.3 Token 用量
 
-- 图片模式主要查看 `usage.image_generation`。
-- STL 模式主要查看 `usage.codex`。
+- 图片和 STL 模式都主要查看 `usage.codex`，因为两者都通过 Codex 任务执行。
+- `usage.image_generation` 保留用于响应结构兼容，在内置 ImageGen 模式下通常为 `0`。
 - `usage.total_tokens` 是本次任务中服务商返回的 Token 总数，不是费用金额。
 - 如果当前模型、账户或 Codex CLI 没有返回 Token 数据，相应字段为 `0`，并在 `warnings` 中说明。
 
@@ -307,7 +307,7 @@ FastAPI 错误采用以下基本结构：
 | `401` | `X-API-Key` 缺失或错误。 |
 | `422` | 请求 JSON 字段缺失、类型错误、尺寸非法或枚举值不支持。 |
 | `500` | 服务内部未处理错误。 |
-| `502` | OpenAI、Codex 或生成结果异常，例如缺少必需产物或 STL 无效。 |
+| `502` | Codex、内置 ImageGen 或生成结果异常，例如缺少必需产物或 STL 无效。 |
 | `503` | 服务器找不到 Codex CLI。 |
 | `504` | Codex 建模任务超过配置的执行时间。 |
 
@@ -322,10 +322,10 @@ GET /health
 ```json
 {
   "status": "ok",
-  "default_image_model": "gpt-image-2",
+  "image_backend": "codex_builtin_imagegen",
   "default_codex_model": "gpt-5.6-sol"
 }
 ```
 
-健康检查只表示 HTTP 服务正在运行，不代表 OpenAI API Key 有效，也不代表 Codex 建模环境已经完成真实任务验证。
+健康检查只表示 HTTP 服务正在运行，不代表 ChatGPT 登录仍有效，也不代表 Codex/ImageGen 已完成真实任务验证。
 

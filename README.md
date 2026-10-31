@@ -2,17 +2,17 @@
 
 一个统一的 JSON/Base64 HTTP 接口，提供两个功能：
 
-- `render_3d_views`：输入一至六张参考图，调用 GPT Image API，输出六个方向的 3D 公仔图。
+- `render_3d_views`：输入一至六张参考图，通过已登录 ChatGPT 的 Codex 内置 ImageGen 输出六个方向的 3D 公仔图。
 - `reconstruct_stl`：输入多视图、尺寸和要求，调用非交互 Codex，在隔离任务目录中实际生成 STL、网格预览、验证报告和可编辑源文件。
 
-响应中的 `usage` 分别展示图片接口与 Codex 报告的 token。它是 token 数量，不是费用估算。图片生成接口官方会返回 Base64 图片和可用的 token usage；Codex 使用 `codex exec --json`，服务从 JSONL 事件中读取最后的累计 usage。
+两个功能都使用 `codex exec --json`，服务从 JSONL 事件中读取累计 token usage。它是 token 数量，不是费用估算。
 如果特定 Codex CLI 版本或账户后端没有在事件中提供 usage，数值返回 0，并在 `warnings` 中明确说明。
 
 ## 运行条件
 
 - Python 3.11+；建议 Python 3.12。
-- 已安装并可运行 `codex` CLI。STL 模式使用服务器本机的 Codex/ChatGPT 登录状态。
-- 图片模式使用服务器环境变量 `OPENAI_API_KEY`，调用方不提交也无法读取该密钥。
+- 已安装并可运行 `codex` CLI，且已通过 `codex login` 登录 ChatGPT。图片与 STL 模式均使用该登录状态。
+- 本机 Codex 必须提供内置 `imagegen` 技能和 `image_gen` 工具；不需要 `OPENAI_API_KEY` 或 API 余额。
 - 生产环境建议在服务端配置 `SERVICE_API_KEY`，调用方通过 `X-API-Key` 请求头发送。该密钥只保护本服务，不用于调用 OpenAI。
 
 本地启动：
@@ -23,7 +23,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[test]'
 export SERVICE_API_KEY='your-service-key'
-export OPENAI_API_KEY='sk-server-side-key'
 export CODEX_BIN='/absolute/path/to/codex'
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
@@ -37,7 +36,6 @@ Docker：
 ```bash
 docker build -t codex-3d-api .
 docker run --rm -p 8000:8000 \
-  -e OPENAI_API_KEY \
   -e SERVICE_API_KEY='your-service-key' \
   -v "$PWD/var:/app/var" \
   codex-3d-api
@@ -47,7 +45,7 @@ docker run --rm -p 8000:8000 \
 
 `POST /v1/generate`
 
-请求为 JSON。图片的 `data_base64` 可使用纯 Base64 或 `data:image/png;base64,...`。调用方可以选择 `image_model` 和 `codex_model`；默认图片模型为 `gpt-image-2`，默认 Codex 模型为 `gpt-5.6-sol`。OpenAI 密钥只存在于服务器环境中，不属于接口请求或响应。最大输入、输出和超时可通过 `.env.example` 中的环境变量调整。
+请求为 JSON。图片的 `data_base64` 可使用纯 Base64 或 `data:image/png;base64,...`。调用方可以选择 `codex_model`，默认值为 `gpt-5.6-sol`。图片工具由已登录的 ChatGPT/Codex 管理，接口不接受 `image_model` 或 OpenAI API Key。最大输入、输出和超时可通过 `.env.example` 中的环境变量调整。
 
 图片六视图示例见 [examples/render_request.json](examples/render_request.json)：
 
@@ -126,7 +124,7 @@ python3 examples/client.py reconstruct_stl front.png back.png left.png right.png
 
 ## 行为与限制
 
-图片功能使用专门的 GPT Image API，因为 Codex 本身是代理运行时，不是图像生成端点。六个方向分别调用一次，并把第一张正面图加入后续请求作为一致性参考。生成模型仍可能出现跨视角差异。
+图片功能在一个临时 Codex 任务中连续调用内置 ImageGen，并要求使用参考图和之前生成结果作为一致性锚点。它不使用 Platform Images API。内置工具可能无法严格满足请求的像素尺寸，且生成结果仍可能出现跨视角差异。
 
 STL 功能使用 Codex 代理循环：它读取参考图，在任务目录内创建建模代码、导出 STL，再生成来自实际 STL 的预览和验证报告。结果质量依赖参考图、尺寸、模型、运行环境和任务时限。服务要求 Codex 明确标记 `simplified_initial` 或 `detailed_reconstruction`，不会把效果图改名为 STL。
 
@@ -142,12 +140,11 @@ Codex 使用 `workspace-write` 沙箱和自动审批，不使用绕过沙箱的�
 pytest -q
 ```
 
-真实连通测试会产生 API 使用量，应使用示例请求显式执行。
+真实连通测试会消耗 ChatGPT/Codex 使用额度，应使用示例请求显式执行。
 
 ## 官方资料
 
 - [Codex as a platform](https://developers.openai.com/blog/codex-as-a-platform)
-- [Image generation guide](https://developers.openai.com/api/docs/guides/image-generation)
-- [Create image API](https://developers.openai.com/api/reference/resources/images/methods/generate)
+- [Codex authentication](https://learn.chatgpt.com/docs/auth?surface=cli)
 - [Counting tokens](https://developers.openai.com/api/docs/guides/token-counting)
 
