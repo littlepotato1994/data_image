@@ -14,6 +14,10 @@
     "height": 40,
     "preserve_reference_proportions": true
   },
-  "include_editable_source": true
+  "include_editable_source": true,
+  "acceleration_mode": "balanced",
+  "character_id": "monkey-001",
+  "reuse_character": true,
+  "bypass_cache": false
 }
 

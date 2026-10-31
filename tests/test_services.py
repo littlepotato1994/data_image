@@ -68,6 +68,8 @@ def test_codex_service_collects_artifacts_and_usage(tmp_path):
         f"#!{sys.executable}\n"
         "import json, pathlib, struct, sys, zipfile\n"
         "args=sys.argv[1:]\n"
+        "assert '--config' in args\n"
+        "assert 'model_reasoning_effort=medium' in args\n"
         "job=pathlib.Path(args[args.index('--cd')+1]); out=job/'output'; out.mkdir(exist_ok=True)\n"
         "stl=b'fake'.ljust(80,b'\\0')+struct.pack('<I',1)+struct.pack('<12fH',0,0,1,0,0,0,2,0,0,0,3,4,0)\n"
         "(out/'model.stl').write_bytes(stl)\n"

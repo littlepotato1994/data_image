@@ -21,6 +21,10 @@ def main() -> None:
     parser.add_argument("--height", type=float)
     parser.add_argument("--url", default="http://127.0.0.1:8000/v1/generate")
     parser.add_argument("--output", type=Path, default=Path("client_output"))
+    parser.add_argument("--acceleration-mode", choices=["fast", "balanced", "quality"], default="balanced")
+    parser.add_argument("--character-id")
+    parser.add_argument("--bypass-cache", action="store_true")
+    parser.add_argument("--no-reuse-character", action="store_true")
     args = parser.parse_args()
 
     images = []
@@ -37,7 +41,12 @@ def main() -> None:
         "images": images,
         "requirement": args.requirement,
         "codex_model": args.codex_model,
+        "acceleration_mode": args.acceleration_mode,
+        "bypass_cache": args.bypass_cache,
+        "reuse_character": not args.no_reuse_character,
     }
+    if args.character_id:
+        payload["character_id"] = args.character_id
     if args.mode == "reconstruct_stl":
         if not args.height:
             raise SystemExit("--height is required for reconstruct_stl")
@@ -68,7 +77,12 @@ def main() -> None:
     )
     for item in result["artifacts"]:
         (args.output / item["filename"]).write_bytes(base64.b64decode(item["data_base64"]))
-    print(json.dumps({"usage": result["usage"], "output": str(args.output)}, ensure_ascii=False, indent=2))
+    print(json.dumps({
+        "character_id": result.get("character_id"),
+        "cache_hit": result.get("cache_hit", False),
+        "usage": result["usage"],
+        "output": str(args.output),
+    }, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
