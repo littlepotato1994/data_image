@@ -1,6 +1,5 @@
 {
   "mode": "reconstruct_stl",
-  "openai_api_key": "sk-REPLACE_WITH_CALLER_KEY",
   "codex_model": "gpt-5.6-sol",
   "images": [
     {"mime_type": "image/png", "data_base64": "FRONT_BASE64"},

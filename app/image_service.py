@@ -41,8 +41,7 @@ def generate_views(
     settings: Settings,
     client: OpenAI | None = None,
 ) -> tuple[list[Artifact], TokenUsage, list[str]]:
-    api_key = request.openai_api_key.get_secret_value() if request.openai_api_key else None
-    client = client or OpenAI(api_key=api_key)
+    client = client or OpenAI()
     views = request.views or DEFAULT_VIEWS
     output_dir.mkdir(parents=True, exist_ok=True)
     artifacts: list[Artifact] = []

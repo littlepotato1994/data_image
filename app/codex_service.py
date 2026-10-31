@@ -119,8 +119,6 @@ def run_codex_stl(
 
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
-    if request.openai_api_key:
-        env["OPENAI_API_KEY"] = request.openai_api_key.get_secret_value()
     try:
         completed = subprocess.run(
             command,

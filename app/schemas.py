@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 DEFAULT_IMAGE_MODEL = "gpt-image-2"
 DEFAULT_CODEX_MODEL = "gpt-5.6-sol"
@@ -43,10 +43,6 @@ class GenerateRequest(BaseModel):
     mode: Mode
     images: list[Base64Image] = Field(min_length=1, max_length=6)
     requirement: str = Field(min_length=1, max_length=30_000)
-    openai_api_key: SecretStr | None = Field(
-        None,
-        description="OpenAI API key used only for this request; omitted values use the local Codex login where supported",
-    )
     image_model: str = Field(DEFAULT_IMAGE_MODEL, min_length=1, max_length=100)
     codex_model: str = Field(DEFAULT_CODEX_MODEL, min_length=1, max_length=100)
     dimensions_mm: DimensionsMM | None = None
@@ -59,8 +55,6 @@ class GenerateRequest(BaseModel):
     def validate_mode(self):
         if self.mode == Mode.RECONSTRUCT_STL and self.dimensions_mm is None:
             raise ValueError("dimensions_mm is required for reconstruct_stl")
-        if self.mode == Mode.RENDER_3D_VIEWS and self.openai_api_key is None:
-            raise ValueError("openai_api_key is required for render_3d_views")
         return self
 
 

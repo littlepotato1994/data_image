@@ -36,7 +36,7 @@ X-API-Key: 你的服务访问密钥
 
 `X-API-Key` 只用于访问本服务，与 OpenAI API Key 不同。
 
-调用 OpenAI 时使用请求 JSON 中的 `openai_api_key`。该字段只用于本次任务，不会出现在响应中。服务端和反向代理不应记录完整请求正文，避免泄露密钥及图片 Base64。
+调用方不提交 OpenAI API Key。图片功能使用服务器环境变量 `OPENAI_API_KEY`，STL 功能使用服务器本机的 Codex/ChatGPT 登录状态。服务器凭据不会出现在接口请求或响应中。服务端和反向代理仍不应记录完整请求正文，避免泄露图片 Base64。
 
 ## 3. 通用图片格式
 
@@ -63,7 +63,6 @@ X-API-Key: 你的服务访问密钥
 ```json
 {
   "mode": "render_3d_views",
-  "openai_api_key": "sk-你的OpenAI_API_Key",
   "image_model": "gpt-image-2",
   "images": [
     {
@@ -90,7 +89,6 @@ X-API-Key: 你的服务访问密钥
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 | --- | --- | --- | --- | --- |
 | `mode` | string | 是 | 无 | 固定为 `render_3d_views`。 |
-| `openai_api_key` | string | 是 | 无 | 调用图片模型使用的 OpenAI API Key。 |
 | `image_model` | string | 否 | `gpt-image-2` | 本次请求使用的图片生成模型。 |
 | `images` | array | 是 | 无 | 1～6 张外观或结构参考图。 |
 | `requirement` | string | 是 | 无 | 用户对材质、细节、背景等补充要求，长度 1～30000 个字符。 |
@@ -128,7 +126,6 @@ curl -sS http://127.0.0.1:8000/v1/generate \
 ```json
 {
   "mode": "reconstruct_stl",
-  "openai_api_key": "sk-你的OpenAI_API_Key",
   "codex_model": "gpt-5.6-sol",
   "images": [
     {
@@ -156,7 +153,6 @@ curl -sS http://127.0.0.1:8000/v1/generate \
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 | --- | --- | --- | --- | --- |
 | `mode` | string | 是 | 无 | 固定为 `reconstruct_stl`。 |
-| `openai_api_key` | string | 否 | 无 | 本次 Codex 任务使用的 OpenAI API Key；不传时可使用服务器本机 Codex 登录状态。 |
 | `codex_model` | string | 否 | `gpt-5.6-sol` | 本次 STL 重建使用的 Codex 模型。 |
 | `images` | array | 是 | 无 | 1～6 张多视图参考图。建议依次传正面、背面、角色左侧、角色右侧、左前 45°、右后 45°。 |
 | `requirement` | string | 是 | 无 | 用户的建模、打印及细节要求。 |
@@ -291,7 +287,6 @@ jq -r '.artifacts[] | select(.filename == "model.stl") | .data_base64' \
 
 ```bash
 python3 examples/client.py reconstruct_stl front.png back.png \
-  --openai-api-key 'sk-...' \
   --codex-model 'gpt-5.6-sol' \
   --height 40 \
   --requirement '生成适合3D打印的单件实体模型'

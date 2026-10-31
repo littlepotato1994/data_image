@@ -50,7 +50,6 @@ def test_image_service_generates_requested_views(tmp_path):
     input_path.write_bytes(b"input")
     request = GenerateRequest.model_validate({
         "mode": "render_3d_views",
-        "openai_api_key": "sk-test",
         "images": [{"data_base64": "aW5wdXQ=", "mime_type": "image/png"}],
         "requirement": "same object",
         "image_model": "request-image-model",

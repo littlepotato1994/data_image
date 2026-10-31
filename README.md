@@ -11,8 +11,8 @@
 ## 运行条件
 
 - Python 3.11+；建议 Python 3.12。
-- 已安装并可运行 `codex` CLI。STL 模式使用请求中的 `openai_api_key`；未传时可回退到本机 Codex 登录状态。
-- 图片模式必须在请求 JSON 中提供有效的 `openai_api_key`。
+- 已安装并可运行 `codex` CLI。STL 模式使用服务器本机的 Codex/ChatGPT 登录状态。
+- 图片模式使用服务器环境变量 `OPENAI_API_KEY`，调用方不提交也无法读取该密钥。
 - 生产环境建议在服务端配置 `SERVICE_API_KEY`，调用方通过 `X-API-Key` 请求头发送。该密钥只保护本服务，不用于调用 OpenAI。
 
 本地启动：
@@ -23,6 +23,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[test]'
 export SERVICE_API_KEY='your-service-key'
+export OPENAI_API_KEY='sk-server-side-key'
 export CODEX_BIN='/absolute/path/to/codex'
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
@@ -36,6 +37,7 @@ Docker：
 ```bash
 docker build -t codex-3d-api .
 docker run --rm -p 8000:8000 \
+  -e OPENAI_API_KEY \
   -e SERVICE_API_KEY='your-service-key' \
   -v "$PWD/var:/app/var" \
   codex-3d-api
@@ -45,7 +47,7 @@ docker run --rm -p 8000:8000 \
 
 `POST /v1/generate`
 
-请求为 JSON。图片的 `data_base64` 可使用纯 Base64 或 `data:image/png;base64,...`。调用方在每次请求中传入 `openai_api_key`、`image_model` 和 `codex_model`；默认图片模型为 `gpt-image-2`，默认 Codex 模型为 `gpt-5.6-sol`。密钥只传给本次 OpenAI/Codex 调用，不写入响应或任务日志。最大输入、输出和超时可通过 `.env.example` 中的环境变量调整。
+请求为 JSON。图片的 `data_base64` 可使用纯 Base64 或 `data:image/png;base64,...`。调用方可以选择 `image_model` 和 `codex_model`；默认图片模型为 `gpt-image-2`，默认 Codex 模型为 `gpt-5.6-sol`。OpenAI 密钥只存在于服务器环境中，不属于接口请求或响应。最大输入、输出和超时可通过 `.env.example` 中的环境变量调整。
 
 图片六视图示例见 [examples/render_request.json](examples/render_request.json)：
 
@@ -114,11 +116,9 @@ jq -r '.artifacts[] | select(.filename == "model.stl") | .data_base64' \
 
 ```bash
 python3 examples/client.py render_3d_views reference.png \
-  --openai-api-key 'sk-...' \
   --requirement '生成同一实体的六个方向，纯白背景'
 
 python3 examples/client.py reconstruct_stl front.png back.png left.png right.png \
-  --openai-api-key 'sk-...' \
   --codex-model 'gpt-5.6-sol' \
   --height 40 \
   --requirement '按参考比例生成单件实心模型，保留一体式挂孔'

@@ -16,20 +16,10 @@ def test_stl_requires_dimensions():
 def test_render_defaults_are_valid():
     value = GenerateRequest.model_validate({
         "mode": "render_3d_views",
-        "openai_api_key": "sk-test",
         "images": [{"data_base64": "AA==", "mime_type": "image/png"}],
         "requirement": "six views",
     })
     assert value.image_quality == "high"
     assert value.image_model == "gpt-image-2"
     assert value.codex_model == "gpt-5.6-sol"
-
-
-def test_render_requires_openai_api_key():
-    with pytest.raises(ValidationError):
-        GenerateRequest.model_validate({
-            "mode": "render_3d_views",
-            "images": [{"data_base64": "AA==", "mime_type": "image/png"}],
-            "requirement": "six views",
-        })
 
