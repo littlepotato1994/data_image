@@ -47,6 +47,14 @@ docker run --rm -p 8000:8000 \
 
 请求为 JSON。图片的 `data_base64` 可使用纯 Base64 或 `data:image/png;base64,...`。调用方可以选择 `codex_model`，默认值为 `gpt-5.6-sol`。图片工具由已登录的 ChatGPT/Codex 管理，接口不接受 `image_model` 或 OpenAI API Key。最大输入、输出和超时可通过 `.env.example` 中的环境变量调整。
 
+长任务推荐使用异步接口：
+
+- `POST /v1/jobs`：提交请求，立即返回 `job_id`（HTTP 202）。
+- `GET /v1/jobs/{job_id}`：查询 `queued`、`running`、`completed` 或 `failed`。
+- `GET /v1/jobs/{job_id}/result`：完成后获取与同步接口相同的 Base64 响应。
+
+本机默认一次只执行一个 Codex 任务，后续任务保持 `queued`，避免并发挤占 ChatGPT 使用额度。完整轮询客户端见 [examples/async_client.py](examples/async_client.py)。
+
 图片六视图示例见 [examples/render_request.json](examples/render_request.json)：
 
 ```bash
@@ -114,6 +122,9 @@ jq -r '.artifacts[] | select(.filename == "model.stl") | .data_base64' \
 
 ```bash
 python3 examples/client.py render_3d_views reference.png \
+  --requirement '生成同一实体的六个方向，纯白背景'
+
+python3 examples/async_client.py render_3d_views reference.png \
   --requirement '生成同一实体的六个方向，纯白背景'
 
 python3 examples/client.py reconstruct_stl front.png back.png left.png right.png \

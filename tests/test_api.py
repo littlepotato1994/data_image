@@ -10,4 +10,7 @@ def test_health_and_openapi():
     assert response.json()["status"] == "ok"
     schema = client.get("/openapi.json").json()
     assert "/v1/generate" in schema["paths"]
+    assert "/v1/jobs" in schema["paths"]
+    assert "/v1/jobs/{job_id}" in schema["paths"]
+    assert "/v1/jobs/{job_id}/result" in schema["paths"]
 

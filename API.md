@@ -329,3 +329,87 @@ GET /health
 
 健康检查只表示 HTTP 服务正在运行，不代表 ChatGPT 登录仍有效，也不代表 Codex/ImageGen 已完成真实任务验证。
 
+## 10. 异步任务接口（推荐）
+
+六视图和 STL 都属于长任务。异步接口会在收到完整 JSON 后立即返回任务 ID，客户端无需保持一个持续数分钟的 HTTP 请求。
+
+### 10.1 提交任务
+
+```http
+POST /v1/jobs
+Content-Type: application/json
+X-API-Key: 你的服务访问密钥
+```
+
+请求正文与同步的 `POST /v1/generate` 完全相同。
+
+响应状态为 HTTP `202`：
+
+```json
+{
+  "job_id": "af9e9af7fa7f4ae491e1a31900620aea",
+  "status": "queued",
+  "status_url": "/v1/jobs/af9e9af7fa7f4ae491e1a31900620aea",
+  "result_url": "/v1/jobs/af9e9af7fa7f4ae491e1a31900620aea/result"
+}
+```
+
+### 10.2 查询状态
+
+```http
+GET /v1/jobs/{job_id}
+X-API-Key: 你的服务访问密钥
+```
+
+```json
+{
+  "job_id": "af9e9af7fa7f4ae491e1a31900620aea",
+  "mode": "render_3d_views",
+  "status": "running",
+  "stage": "codex_running",
+  "created_at": "2026-10-31T03:00:00+00:00",
+  "started_at": "2026-10-31T03:00:01+00:00",
+  "completed_at": null,
+  "error": null
+}
+```
+
+状态含义：
+
+| 状态 | 说明 |
+| --- | --- |
+| `queued` | 已接收，等待本机 Codex 工作槽。 |
+| `running` | Codex/ImageGen 或 STL 建模正在执行。 |
+| `completed` | 已完成，可以读取结果。 |
+| `failed` | 任务失败，原因位于 `error`。 |
+
+建议每 5～10 秒查询一次，不要高频轮询。
+
+### 10.3 获取结果
+
+```http
+GET /v1/jobs/{job_id}/result
+X-API-Key: 你的服务访问密钥
+```
+
+- 完成：HTTP `200`，返回与同步接口相同的 `GenerateResponse`。
+- 尚未完成：HTTP `202`，返回当前状态。
+- 任务失败：HTTP `409`，返回失败原因。
+- ID 不存在：HTTP `404`。
+
+### 10.4 完整异步客户端
+
+```bash
+export SERVICE_API_KEY='你的服务访问密钥'
+
+python3 examples/async_client.py \
+  render_3d_views \
+  reference.jpg \
+  --url http://127.0.0.1:8000 \
+  --output six_views_output \
+  --poll-interval 5 \
+  --requirement '生成同一个固定公仔的六个方向，纯白背景'
+```
+
+客户端会自动提交、轮询、获取结果并解码所有 Base64 产物。
+

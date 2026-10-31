@@ -94,3 +94,21 @@ class GenerateResponse(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     codex_thread_id: str | None = None
 
+
+class JobSubmission(BaseModel):
+    job_id: str
+    status: Literal["queued"] = "queued"
+    status_url: str
+    result_url: str
+
+
+class JobStatusResponse(BaseModel):
+    job_id: str
+    mode: Mode
+    status: Literal["queued", "running", "completed", "failed"]
+    stage: str
+    created_at: str
+    started_at: str | None = None
+    completed_at: str | None = None
+    error: str | None = None
+
