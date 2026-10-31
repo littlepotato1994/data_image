@@ -55,13 +55,9 @@ docker run --rm -p 8000:8000 \
 
 本机默认一次只执行一个 Codex 任务，后续任务保持 `queued`，避免并发挤占 ChatGPT 使用额度。完整轮询客户端见 [examples/async_client.py](examples/async_client.py)。
 
-### STL 加速与角色复用
+### STL 分级加速
 
-`reconstruct_stl` 支持持久化加速：
-
-- 完全相同的图片、尺寸、要求和模式会命中精确缓存，不调用 Codex，响应中 `cache_hit=true` 且本次 token 为 0。
-- 首次 STL 响应会返回 `character_id`。同一角色以后即使换了参考图、尺寸或要求，也应继续提交这个 ID；服务会把上一次的 `source.zip`、参数和验证报告放入新任务，要求 Codex 在已有模型上修改而不是从零开始。
-- 不同角色使用新的 `character_id`。仍会使用固定工具包、分级网格和受控 reasoning effort 加速首次重建。
+每个 `reconstruct_stl` 请求都独立分析本次参考图，不读取其他角色或历史任务的模型。服务通过固定工具包、先草模后精模以及受控 reasoning effort 加速不同角色的首次重建。
 
 加速档位：
 
@@ -71,17 +67,14 @@ docker run --rm -p 8000:8000 \
 | `balanced` | medium | 默认，速度与最终质量平衡 |
 | `quality` | high | 最终精修，允许更长运行时间 |
 
-同一角色的后续调用示例：
+快速模式示例：
 
 ```bash
-python3 examples/async_client.py reconstruct_stl front2.png back2.png left2.png right2.png left_front2.png right_rear2.png \
-  --height 50 \
-  --character-id monkey-001 \
+python3 examples/async_client.py reconstruct_stl front.png back.png left.png right.png left_front.png right_rear.png \
+  --height 40 \
   --acceleration-mode fast \
-  --requirement '沿用原角色，仅更新参考图和高度'
+  --requirement '根据本次六视图生成可打印草模'
 ```
-
-缓存位于 `JOB_ROOT/_cache`，不受临时任务目录清理影响。需要强制重新运行时使用 `bypass_cache=true` 或客户端参数 `--bypass-cache`。
 
 图片六视图示例见 [examples/render_request.json](examples/render_request.json)：
 
@@ -167,7 +160,7 @@ python3 examples/client.py reconstruct_stl front.png back.png left.png right.png
 
 STL 功能使用 Codex 代理循环：它读取参考图，在任务目录内创建建模代码、导出 STL，再生成来自实际 STL 的预览和验证报告。结果质量依赖参考图、尺寸、模型、运行环境和任务时限。服务要求 Codex 明确标记 `simplified_initial` 或 `detailed_reconstruction`，不会把效果图改名为 STL。
 
-同步和异步端点均可使用。图片可能需要数分钟，STL 可能更久；STL 推荐异步作业接口。生产部署建议进一步使用对象存储，并避免让网关记录完整 Base64 请求或响应。服务默认任务完成后删除临时工作目录；加速缓存会保留，设置 `KEEP_JOBS=true` 可额外保留调试文件。
+同步和异步端点均可使用。图片可能需要数分钟，STL 可能更久；STL 推荐异步作业接口。生产部署建议进一步使用对象存储，并避免让网关记录完整 Base64 请求或响应。服务默认任务完成后删除临时工作目录；设置 `KEEP_JOBS=true` 可保留调试文件。
 
 Codex 使用 `workspace-write` 沙箱和自动审批，不使用绕过沙箱的危险参数。用户的 `requirement` 被放进明确的数据边界；仍应在互联网边界前设置身份认证、配额、请求大小限制和审计日志。
 

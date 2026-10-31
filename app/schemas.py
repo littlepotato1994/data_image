@@ -49,15 +49,6 @@ class GenerateRequest(BaseModel):
     image_quality: Literal["low", "medium", "high", "auto"] = "high"
     include_editable_source: bool = True
     acceleration_mode: Literal["fast", "balanced", "quality"] = "balanced"
-    character_id: str | None = Field(
-        None,
-        min_length=1,
-        max_length=100,
-        pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]*$",
-        description="Stable ID used to reuse a previous model/source for the same character",
-    )
-    reuse_character: bool = True
-    bypass_cache: bool = False
 
     @model_validator(mode="after")
     def validate_mode(self):
@@ -103,8 +94,6 @@ class GenerateResponse(BaseModel):
     usage: UsageSummary
     warnings: list[str] = Field(default_factory=list)
     codex_thread_id: str | None = None
-    character_id: str | None = None
-    cache_hit: bool = False
 
 
 class JobSubmission(BaseModel):

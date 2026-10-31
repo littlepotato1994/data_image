@@ -10,7 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .base64io import write_inputs
-from .cache import AccelerationCache, image_digest, request_fingerprint, resolved_character_id
 from .codex_service import run_codex_stl
 from .config import settings
 from .image_service import generate_views
@@ -26,7 +25,6 @@ from .schemas import (
 )
 
 job_store = JobStore(settings.job_root / "_status")
-acceleration_cache = AccelerationCache(settings.job_root / "_cache")
 job_worker = threading.Semaphore(1)
 
 app = FastAPI(
@@ -58,23 +56,6 @@ def _authorize(x_api_key: str | None) -> None:
 
 
 def _execute(request: GenerateRequest, request_id: str, job_dir: Path) -> GenerateResponse:
-    digest = image_digest(request, settings.max_input_bytes)
-    fingerprint = request_fingerprint(request, settings.max_input_bytes)
-    character_id = resolved_character_id(request, digest)
-    if not request.bypass_cache:
-        cached = acceleration_cache.read_exact(fingerprint)
-        if cached is not None:
-            response = GenerateResponse.model_validate(cached)
-            response.request_id = request_id
-            response.character_id = character_id or response.character_id
-            response.cache_hit = True
-            response.usage = UsageSummary()
-            response.warnings = [
-                "Exact request cache hit; Codex was not called and no new model tokens were used.",
-                *response.warnings,
-            ]
-            return response
-
     input_dir = job_dir / "input"
     job_dir.mkdir(parents=True, exist_ok=False)
     input_paths = write_inputs(request.images, input_dir, settings.max_input_bytes)
@@ -83,7 +64,7 @@ def _execute(request: GenerateRequest, request_id: str, job_dir: Path) -> Genera
             request, input_paths, job_dir / "output", settings
         )
         usage = UsageSummary(codex=image_tokens, total_tokens=image_tokens.total_tokens)
-        response = GenerateResponse(
+        return GenerateResponse(
             request_id=request_id,
             mode=request.mode,
             summary=f"Generated {len(artifacts)} consistent 3D reference views.",
@@ -91,28 +72,15 @@ def _execute(request: GenerateRequest, request_id: str, job_dir: Path) -> Genera
             usage=usage,
             warnings=warnings,
         )
-        acceleration_cache.write_exact(fingerprint, response.model_dump(mode="json"))
-        return response
 
-    reused_character = False
-    if character_id and request.reuse_character:
-        reused_character = acceleration_cache.restore_character(
-            character_id, job_dir / "previous_character"
-        )
     artifacts, codex_tokens, result, dimensions, thread_id = run_codex_stl(
-        request,
-        input_paths,
-        job_dir,
-        settings,
-        reused_character=reused_character,
+        request, input_paths, job_dir, settings
     )
     usage = UsageSummary(codex=codex_tokens, total_tokens=codex_tokens.total_tokens)
     warnings = list(result.get("warnings", []))
     if codex_tokens.total_tokens == 0:
         warnings.append("This Codex CLI/provider did not expose token usage in JSONL events.")
-    if reused_character:
-        warnings.insert(0, f"Reused cached source and validation for character_id={character_id}.")
-    response = GenerateResponse(
+    return GenerateResponse(
         request_id=request_id,
         mode=request.mode,
         summary=result["summary"],
@@ -126,17 +94,7 @@ def _execute(request: GenerateRequest, request_id: str, job_dir: Path) -> Genera
         usage=usage,
         warnings=warnings,
         codex_thread_id=thread_id,
-        character_id=character_id,
     )
-    if character_id:
-        acceleration_cache.save_character(
-            character_id,
-            job_dir / "output",
-            fingerprint=fingerprint,
-            image_digest_value=digest,
-        )
-    acceleration_cache.write_exact(fingerprint, response.model_dump(mode="json"))
-    return response
 
 
 @app.post("/v1/generate", response_model=GenerateResponse)

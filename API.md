@@ -145,10 +145,7 @@ curl -sS http://127.0.0.1:8000/v1/generate \
     "preserve_reference_proportions": true
   },
   "include_editable_source": true,
-  "acceleration_mode": "balanced",
-  "character_id": "monkey-001",
-  "reuse_character": true,
-  "bypass_cache": false
+  "acceleration_mode": "balanced"
 }
 ```
 
@@ -163,11 +160,6 @@ curl -sS http://127.0.0.1:8000/v1/generate \
 | `dimensions_mm` | object | 是 | 无 | 目标尺寸，单位按毫米解释。 |
 | `include_editable_source` | boolean | 否 | `true` | 是否要求返回可编辑建模源文件 `source.zip`。 |
 | `acceleration_mode` | string | 否 | `balanced` | `fast`、`balanced` 或 `quality`，分别对应快速草模、平衡和精修。 |
-| `character_id` | string | 否 | 自动生成 | 同一角色跨请求稳定使用的 ID；复用上一次成功源码和验证结果。不同角色应使用不同 ID。 |
-| `reuse_character` | boolean | 否 | `true` | 是否允许读取该 `character_id` 的历史源码。 |
-| `bypass_cache` | boolean | 否 | `false` | 为 `true` 时跳过完全相同请求的结果缓存，强制重新执行。 |
-
-首次不提供 `character_id` 时，服务根据输入图片生成一个 `auto_...` ID并在响应中返回。若同一角色下次换了图片，调用方必须把之前返回的 ID作为 `character_id` 传回，服务才能识别为同一角色。完全相同的请求无需提供 ID，也能自动命中精确缓存。
 
 ### 5.3 尺寸字段
 
@@ -206,8 +198,6 @@ curl -sS http://127.0.0.1:8000/v1/generate \
 ```json
 {
   "request_id": "4f53ccbbf16d4fc49ec956744463d7ae",
-  "character_id": "monkey-001",
-  "cache_hit": false,
   "mode": "reconstruct_stl",
   "summary": "已生成简化初版 STL 并完成网格检查。",
   "classification": "simplified_initial",
