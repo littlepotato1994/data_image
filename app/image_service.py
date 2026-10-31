@@ -65,7 +65,6 @@ def generate_views(
                 size=request.image_size,
                 quality=request.image_quality,
                 output_format="png",
-                response_format="b64_json",
             )
         except Exception as exc:
             raise HTTPException(502, f"OpenAI image generation failed for {view}: {exc}") from exc

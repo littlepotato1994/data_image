@@ -8,6 +8,7 @@ import json
 import mimetypes
 import os
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 
@@ -56,8 +57,12 @@ def main() -> None:
         headers=headers,
         method="POST",
     )
-    with urlopen(request, timeout=3600) as response:
-        result = json.load(response)
+    try:
+        with urlopen(request, timeout=3600) as response:
+            result = json.load(response)
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise SystemExit(f"HTTP {exc.code} {exc.reason}: {body}") from None
 
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "response.json").write_text(
